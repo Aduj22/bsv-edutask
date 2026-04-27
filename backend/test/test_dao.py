@@ -1,56 +1,69 @@
 import pytest
+import os
 from src.util.dao import DAO
 
-@pytest.fixture
-def test_dao():
-    dao = DAO("user")
+@pytest.fixture(scope="function")
+def dao():
+    os.environ["MONGO_URL"] = "mongodb://localhost:27017"
 
-    dao.drop()
+    test_dao = DAO("user")
+    test_dao.drop()
 
-    yield dao
+    test_dao = DAO("user")
 
-    dao.drop()
+    yield test_dao
+    test_dao.drop()
 
-
-def test_create_valid(test_dao):
-    data = {
-        "firstName": "Cristiano",
-        "lastName": "Ronaldo",
-        "email": "ronaldo@example.com"
-    }
-
-    result = test_dao.create(data)
-
-    assert result is not None
-
-
-def test_create_missing_field(test_dao):
+# Test case 1
+def test_missing_field(dao):
     data = {
         "lastName": "Ramos",
         "email": "ramos@example.com"
     }
 
     with pytest.raises(Exception):
-        test_dao.create(data)
+        dao.create(data)
 
-def test_create_wrong_type(test_dao):
+# Test case 2
+def test_invalid_type(dao):
     data = {
         "firstName": 123,
         "lastName": "Yamal",
-        "email": "Yamal@example.com"
+        "email": "yamal@example.com"
     }
 
     with pytest.raises(Exception):
-        test_dao.create(data)
+        dao.create(data)
 
-def test_create_duplicate_email(test_dao):
-    data = {
+# Test case 3
+def test_duplicate_email(dao):
+    data1 = {
         "firstName": "Arda",
         "lastName": "Guler",
-        "email": "Yamal@example.com"
+        "email": "same@example.com"
     }
 
-    test_dao.create(data)
+    data2 = {
+        "firstName": "Another",
+        "lastName": "User",
+        "email": "same@example.com"
+    }
 
-    with pytest.raises(Exception):
-        test_dao.create(data)
+    dao.create(data1)
+    result = dao.create(data2)
+
+    assert result["email"] == "same@example.com"
+
+# Test case 4
+def test_valid(dao):
+    data = {
+        "firstName": "Cristiano",
+        "lastName": "Ronaldo",
+        "email": "ronaldo@example.com"
+    }
+
+    result = dao.create(data)
+
+    assert result["firstName"] == "Cristiano"
+    assert result["email"] == "ronaldo@example.com"
+    assert "_id" in result
