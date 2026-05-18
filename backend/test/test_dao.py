@@ -4,7 +4,7 @@ from src.util.dao import DAO
 
 @pytest.fixture(scope="function")
 def dao():
-    os.environ["MONGO_URL"] = "mongodb://localhost:27017"
+    os.environ["MONGO_URL"] = "mongodb://127.0.0.1:27017"
 
     test_dao = DAO("user")
     test_dao.drop()
